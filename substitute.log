@@ -1,0 +1,59 @@
+** Substitute 0.0.0 build 2020/09/01 18:36:12 Free Pascal 3.0.4
+** 18:36:45
+** Executable name: Fridolin310
+** Process message:
+Fridolin 3.10 x64 (Mar 20 2019)
+created by C.Sommerfeld
+** User message:
+uci
+** Process message:
+id name Fridolin 3.10
+id author C.Sommerfeld
+option name Hash type spin default 64 min 0 max 16384
+option name Threads type spin default 1 min 1 max 4
+option name Nullmove Reduction type spin default 3 min 1 max 5
+option name Nullmove Min Depth type spin default 2 min 1 max 100
+option name LMR Min Depth type spin default 3 min 1 max 100
+option name LMR Min Moves type spin default 4 min 1 max 100
+option name Futility Margin1 type spin default 50 min 0 max 5000
+option name Futility Margin2 type spin default 350 min 0 max 5000
+option name Futility Margin3 type spin default 550 min 0 max 5000
+option name MultiPV type spin default 1 min 1 max 20
+option name MultiPV Delta type spin default 500 min 1 max 2000
+option name Use Nullmove type check default true
+option name Use Futility type check default true
+option name Use LMR type check default true
+option name Use Extensions type check default true
+option name Contempt type spin default 0 min -500 max 500
+option name Lazy Eval Margin type spin default 250 min 0 max 5000
+option name Pawn type spin default 100 min 0 max 2000
+option name Knight type spin default 400 min 0 max 2000
+option name Bishop type spin default 400 min 0 max 2000
+option name Rook type spin default 600 min 0 max 2000
+option name Queen type spin default 1200 min 0 max 2000
+option name Use Endgame Eval type check default true
+option name Ponder type check default true
+option name UCI_Chess960 type check default false
+option name UCI_AnalyseMode type check default false
+option name UCI_ShowCurrLine type check default false
+option name UCI_ShowRefutations type check default false
+option name Show Database Moves type check default false
+option name UCI_EngineAbout type string default sites.google.com/site/fridolinchess
+option name Logging type check default false
+option name OwnBook type check default true
+option name Book Path type string default <empty>
+option name Book Mode type combo default Wide var Wide var Standard var Tournament var BestMove
+option name NalimovPath type string default <empty>
+option name NalimovCache type spin default 32 min 1 max 256
+option name Nalimov Usage type combo default OnRoot var Never var OnRoot var InSearch
+option name Nalimov Min Depth type spin default 6 min 1 max 100
+option name Syzygy Path type string default <empty>
+option name Syzygy Use type check default true
+option name Syzygy 50 Moves Rule type check default true
+uciok
+** User message:
+isready
+** Process message:
+readyok
+** User message:
+quit
