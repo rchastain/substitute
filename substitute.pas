@@ -32,7 +32,7 @@ begin
     Append(LFile)
   else
     Rewrite(LFile);
-  WriteLn(LFile, ALine);
+  WriteLn(LFile, FormatDateTime('hh:nn:ss:zzz', Time) + ' ' + ALine);
   Close(LFile);
 end;
 
@@ -40,19 +40,21 @@ type
   TListener = class(TThread)
   private
     FMessage: TStringList;
+    FWaitAfterRead: cardinal;
     procedure SendMessage;
   protected
     procedure Execute; override;
   public
-    constructor Create(CreateSuspended: boolean);
+    constructor Create(const ACreateSuspended: boolean; const AWaitAfterRead: cardinal);
     destructor Destroy; override;
   end;
 
-constructor TListener.Create(CreateSuspended: boolean);
+constructor TListener.Create(const ACreateSuspended: boolean; const AWaitAfterRead: cardinal);
 begin
-  inherited Create(CreateSuspended);
+  inherited Create(ACreateSuspended);
   FreeOnTerminate := FALSE;
   FMessage := TStringList.Create;
+  FWaitAfterRead := AWaitAfterRead;
 end;
 
 destructor TListener.Destroy;
@@ -62,15 +64,13 @@ begin
 end;
 
 procedure TListener.Execute;
-const
-  CDelay = 50;
 begin
   while not Terminated do
   begin
     FMessage.Text := ReadProcessOutput;
     if FMessage.Count > 0 then
       SendMessage;
-    Sleep(CDelay);
+    Sleep(FWaitAfterRead);
   end;
 end;
 
@@ -84,51 +84,71 @@ begin
     LogLn('<< ' + FMessage[i]);
 end;
 
+const
+  (* Default settings *)
+  CProcessName    = './engines/Fruit-2-3-1-Linux';
+  CWaitAfterRead  = 50;
+  CWaitAfterWrite = 50;
+  (* INI file sections and keys *)
+  CSectionProcess    = 'process';
+  CSectionSettings   = 'settings';
+  CKeyProcessName    = 'processname';
+  CKeyWaitAfterRead  = 'waitafterread';
+  CKeyWaitAfterWrite = 'waitafterwrite';
+
 var
-  LIniName, LExeName: string;
+  LIniFileName,
+  LProcessName: string;
   LListener: TThread;
   LInput: string;
+  LWaitAfterRead,
+  LWaitAfterWrite: cardinal;
   
 begin
-  LogLn('** ' + CAppName + ' ' + CAppVersion + ' build ' + {$I %DATE%} + ' ' + {$I %TIME%} + ' Free Pascal ' + {$I %FPCVERSION%});
-  LogLn('** ' + CAppName + ' started at ' + TimeToStr(Time));
+  LogLn('** ' + CAppInfo, TRUE);
   
-  LIniName := ChangeFileExt(ParamStr(0), '.ini');
-  LExeName := './engines/Fruit-2-3-1-Linux';
+  LIniFileName := ChangeFileExt(ParamStr(0), '.ini');
   
-  if FileExists(LIniName) then
-    (* Try to read executable name from INI file. *)
-    with TIniFile.Create(LIniName) do
+  (* Try to read executable name from INI file. *)
+  with TIniFile.Create(LIniFileName) do
+  try
+    LProcessName := ReadString(CSectionProcess, CKeyProcessName, CProcessName);
+    LWaitAfterRead := ReadInteger(CSectionSettings, CKeyWaitAfterRead, CWaitAfterRead);
+    LWaitAfterWrite := ReadInteger(CSectionSettings, CKeyWaitAfterWrite, CWaitAfterWrite);
+  finally
+    Free;
+  end;
+  
+  (* Try to read executable name from command line. *)
+  if ParamCount = 1 then
+    LProcessName := ParamStr(1);
+  
+  if not FileExists(LProcessName) then
+  begin
+    WriteLn(StdErr, 'Cannot find ' + LProcessName);
+    Exit;
+  end;
+  
+  (* Create INI file if it doesn't exist. *)
+  if not FileExists(LIniFileName) then
+    with TIniFile.Create(LIniFileName) do
     try
-      LExeName := ReadString('settings', 'executable', '???');
-    finally
-      Free;
-    end
-  else
-    (* Create INI file if it doesn't exist. *)
-    with TIniFile.Create(LIniName) do
-    try
-      WriteString('settings', 'executable', LExeName);
+      WriteString(CSectionProcess, CKeyProcessName, CProcessName);
+      WriteInteger(CSectionSettings, CKeyWaitAfterRead, CWaitAfterRead);
+      WriteInteger(CSectionSettings, CKeyWaitAfterWrite, CWaitAfterWrite);
       UpdateFile;
     finally
       Free;
     end;
   
-  (* Try to read executable name from command line. *)
-  if ParamCount = 1 then
-    LExeName := ParamStr(1);
+  LogLn('** Executable: ' + LProcessName);
   
-  if not FileExists(LExeName) then
+  if SetCurrentDir(ExtractFileDir(LProcessName))
+  and CreateConnectedProcess(ExtractFileName(LProcessName)) then
   begin
-    WriteLn(StdErr, 'Cannot find ' + LExeName);
-    Exit;
-  end;
-  
-  LogLn(Format('** Executable: %s', [LExeName]));
-  
-  if CreateConnectedProcess(LExeName) then
-  begin
-    LListener := TListener.Create(TRUE);
+    LogLn('** Current directory: ' + GetCurrentDir);
+    
+    LListener := TListener.Create(TRUE, LWaitAfterRead);
     LListener.Priority := tpNormal;
     LListener.Start;
     
@@ -137,7 +157,7 @@ begin
       ReadLn(LInput);
       LogLn('>> ' + LInput);
       WriteProcessInput(LInput);
-      Sleep(50);
+      Sleep(LWaitAfterWrite);
     end;
     
     LListener.Terminate;
@@ -145,7 +165,6 @@ begin
     LListener.Free;
     
     FreeConnectedProcess;
-  end;
-  
-  LogLn('** ' + CAppName + ' stopped at ' + TimeToStr(Time));
+  end else
+    LogLn('** Cannot create process');
 end.
