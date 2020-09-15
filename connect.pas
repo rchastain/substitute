@@ -36,13 +36,13 @@ end;
 
 function ReadProcessOutput(const ASecondProcess: boolean): string;
 var
-  LNoMoreOutput: boolean;
+  LDone: boolean;
 
   procedure ReadOutput(const AProcess: TProcess);
   var
     LBuffer: string;
-    LBytesAvailable: DWord;
-    LBytesRead: LongInt;
+    LBytesAvailable: dword;
+    LBytesRead: longint;
   begin
     if AProcess.Running then
     begin
@@ -54,7 +54,7 @@ var
         LBytesRead := AProcess.Output.Read(LBuffer[1], LBytesAvailable);
         result := result + Copy(LBuffer, 1, LBytesRead);
         LBytesAvailable := AProcess.Output.NumBytesAvailable;
-        LNoMoreOutput := FALSE;
+        LDone := FALSE;
       end;
     end;
   end;
@@ -62,9 +62,9 @@ var
 begin
   result := '';
   repeat
-    LNoMoreOutput := TRUE;
+    LDone := TRUE;
     ReadOutput(LProcess[ASecondProcess]);
-  until LNoMoreOutput;
+  until LDone;
 end;
 
 procedure WriteProcessInput(const AStr: string; const ASecondProcess: boolean);

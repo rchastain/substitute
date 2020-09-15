@@ -39,11 +39,27 @@ end;
 type
   TListener = class(TThread)
   private
-    FMessage: string;
-    procedure OnEngineMessage;
+    FMessage: TStringList;
+    procedure SendMessage;
   protected
     procedure Execute; override;
+  public
+    constructor Create(CreateSuspended: boolean);
+    destructor Destroy; override;
   end;
+
+constructor TListener.Create(CreateSuspended: boolean);
+begin
+  inherited Create(CreateSuspended);
+  FreeOnTerminate := FALSE;
+  FMessage := TStringList.Create;
+end;
+
+destructor TListener.Destroy;
+begin
+  FMessage.Free;
+  inherited Destroy;
+end;
 
 procedure TListener.Execute;
 const
@@ -51,18 +67,21 @@ const
 begin
   while not Terminated do
   begin
-    FMessage := ReadProcessOutput;
-    if FMessage <> '' then
-      OnEngineMessage;
+    FMessage.Text := ReadProcessOutput;
+    if FMessage.Count > 0 then
+      SendMessage;
     Sleep(CDelay);
   end;
 end;
 
-procedure TListener.OnEngineMessage;
+procedure TListener.SendMessage;
+var
+  i: integer;
 begin
-  Write(FMessage);
+  Write(FMessage.Text);
   Flush(output);
-  LogLn(Format('** Process message:' + LineEnding + '%s', [Trim(FMessage)]));
+  for i := 0 to Pred(FMessage.Count) do
+    LogLn('<< ' + FMessage[i]);
 end;
 
 var
@@ -71,11 +90,11 @@ var
   LInput: string;
   
 begin
-  LogLn(Format('** %s %s build %s %s Free Pascal %s', [CAppName, CAppVersion, {$I %DATE%}, {$I %TIME%}, {$I %FPCVERSION%}]), TRUE);
-  LogLn('** ' + TimeToStr(Time));
+  LogLn('** ' + CAppName + ' ' + CAppVersion + ' build ' + {$I %DATE%} + ' ' + {$I %TIME%} + ' Free Pascal ' + {$I %FPCVERSION%});
+  LogLn('** ' + CAppName + ' started at ' + TimeToStr(Time));
   
   LIniName := ChangeFileExt(ParamStr(0), '.ini');
-  LExeName := './Fruit-2-3-1-Linux';
+  LExeName := './engines/Fruit-2-3-1-Linux';
   
   if FileExists(LIniName) then
     (* Try to read executable name from INI file. *)
@@ -105,7 +124,7 @@ begin
     Exit;
   end;
   
-  LogLn(Format('** Executable name: %s', [LExeName]));
+  LogLn(Format('** Executable: %s', [LExeName]));
   
   if CreateConnectedProcess(LExeName) then
   begin
@@ -116,7 +135,7 @@ begin
     while ProcessRunning and not Eof do
     begin
       ReadLn(LInput);
-      LogLn(Format('** User message:' + LineEnding + '%s', [LInput]));
+      LogLn('>> ' + LInput);
       WriteProcessInput(LInput);
       Sleep(50);
     end;
@@ -127,4 +146,6 @@ begin
     
     FreeConnectedProcess;
   end;
+  
+  LogLn('** ' + CAppName + ' stopped at ' + TimeToStr(Time));
 end.
