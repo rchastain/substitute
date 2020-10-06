@@ -86,15 +86,15 @@ end;
 
 const
   (* Default settings *)
-  CProcessName    = './engines/Fruit-2-3-1-Linux';
+  CProcessName    = 'NEG';
   CWaitAfterRead  = 50;
   CWaitAfterWrite = 50;
   (* INI file sections and keys *)
   CSectionProcess    = 'process';
-  CSectionSettings   = 'settings';
-  CKeyProcessName    = 'processname';
-  CKeyWaitAfterRead  = 'waitafterread';
-  CKeyWaitAfterWrite = 'waitafterwrite';
+  CSectionTime       = 'time';
+  CKeyProcessName    = 'name';
+  CKeyWaitAfterRead  = 'afterRead';
+  CKeyWaitAfterWrite = 'afterWrite';
 
 var
   LIniFileName,
@@ -113,8 +113,8 @@ begin
   with TIniFile.Create(LIniFileName) do
   try
     LProcessName := ReadString(CSectionProcess, CKeyProcessName, CProcessName);
-    LWaitAfterRead := ReadInteger(CSectionSettings, CKeyWaitAfterRead, CWaitAfterRead);
-    LWaitAfterWrite := ReadInteger(CSectionSettings, CKeyWaitAfterWrite, CWaitAfterWrite);
+    LWaitAfterRead := ReadInteger(CSectionTime, CKeyWaitAfterRead, CWaitAfterRead);
+    LWaitAfterWrite := ReadInteger(CSectionTime, CKeyWaitAfterWrite, CWaitAfterWrite);
   finally
     Free;
   end;
@@ -134,8 +134,8 @@ begin
     with TIniFile.Create(LIniFileName) do
     try
       WriteString(CSectionProcess, CKeyProcessName, CProcessName);
-      WriteInteger(CSectionSettings, CKeyWaitAfterRead, CWaitAfterRead);
-      WriteInteger(CSectionSettings, CKeyWaitAfterWrite, CWaitAfterWrite);
+      WriteInteger(CSectionTime, CKeyWaitAfterRead, CWaitAfterRead);
+      WriteInteger(CSectionTime, CKeyWaitAfterWrite, CWaitAfterWrite);
       UpdateFile;
     finally
       Free;
@@ -143,11 +143,8 @@ begin
   
   LogLn('** Executable: ' + LProcessName);
   
-  if SetCurrentDir(ExtractFileDir(LProcessName))
-  and CreateConnectedProcess(ExtractFileName(LProcessName)) then
+  if CreateConnectedProcess(LProcessName) then
   begin
-    LogLn('** Current directory: ' + GetCurrentDir);
-    
     LListener := TListener.Create(TRUE, LWaitAfterRead);
     LListener.Priority := tpNormal;
     LListener.Start;
